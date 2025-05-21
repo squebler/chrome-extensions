@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "White to Night",
+  "version": "1.0",
+  "description": "Change white to charcoal grey.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["https://docs.google.com/document/*"],
+  "background": {
+    "service_worker": "content.js"
+  },
+  "action": {
+    "default_title": "White to Night"
+  }
+}
