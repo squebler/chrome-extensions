@@ -1,10 +1,23 @@
-# chrome-extensions
+# Chrome Extensions
 
-## How to Load Extensions in General
-1. Go to `chrome://extensions`
-2. Enable "Developer mode"
-3. Click "Load unpacked" and select the extension's folder.
+## [Window Sizer](chrome-window-sizer/README.md)
 
-## White to Night
-To use, load the extension, then click the extension toolbar button. Currently (2025-05-21) only works in a Google Docs page, which is what I initially created it for. It doesn't work on the Docs home page, only in a document page. Also, there's a fair chance it will break eventually, when the css for docs changes. 
+Open a new Chrome window at a specified width and height. Capture the current
+window's size, save named presets, and open a new window from a preset with one
+click. Dimensions include the browser frame, tabs, and borders.
 
+## [White to Night](white-to-night/README.md)
+
+Apply a charcoal-colored theme to the Google Docs document editor. Click the
+extension's toolbar button while viewing a document to inject the styles.
+It does not support the Google Docs home page.
+
+## Install an extension locally
+
+1. Open `chrome://extensions` in Chrome.
+2. Enable **Developer mode**.
+3. Click **Load unpacked**.
+4. Select the folder for the extension you want to install (the folder containing its `manifest.json`).
+5. Optionally pin the extension from Chrome's **Extensions** (puzzle-piece) menu.
+
+See each extension's README for usage details and limitations.
