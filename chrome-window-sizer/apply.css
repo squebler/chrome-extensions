@@ -1,0 +1,18 @@
+/* Additional controls for applying dimensions to the existing Chrome window. */
+.preset-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+.preset-row .preset-open {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.preset-row .preset-apply {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding-inline: 10px;
+}
+.save-actions #save-preset {
+  flex: 1 1 auto;
+}

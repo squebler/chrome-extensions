@@ -3,24 +3,22 @@
 const DEFAULT_WIDTH = 1000;
 const DEFAULT_HEIGHT = 700;
 const MAX_NAME_LENGTH = 48;
-
 const form = document.getElementById('window-form');
 const widthInput = document.getElementById('width');
 const heightInput = document.getElementById('height');
 const openButton = document.getElementById('open-window');
+const applyButton = document.getElementById('apply-window');
 const saveButton = document.getElementById('save-preset');
 const captureButton = document.getElementById('use-current-window');
 const status = document.getElementById('status');
 const presetList = document.getElementById('preset-list');
 const emptyPresets = document.getElementById('empty-presets');
-
 const saveDialog = document.getElementById('save-dialog');
 const saveForm = document.getElementById('save-form');
 const presetNameInput = document.getElementById('preset-name');
 const saveDescription = document.getElementById('save-description');
 const saveError = document.getElementById('save-error');
 const confirmSave = document.getElementById('confirm-save');
-
 const deleteDialog = document.getElementById('delete-dialog');
 const deleteDescription = document.getElementById('delete-description');
 const deleteError = document.getElementById('delete-error');
@@ -29,7 +27,6 @@ const confirmDelete = document.getElementById('confirm-delete');
 let presets = [];
 let pendingOverwrite = null;
 let pendingDelete = null;
-
 function validDimensions(width, height) {
   return Number.isInteger(width) && Number.isInteger(height) &&
     width >= 1 && height >= 1 && width <= 10000 && height <= 10000;
@@ -44,7 +41,6 @@ function enteredDimensions() {
   }
   return { width, height };
 }
-
 function showStatus(message, success = false) {
   status.textContent = message;
   status.classList.toggle('success', success);
@@ -61,7 +57,6 @@ function renderPresets() {
   for (const preset of presets) {
     const row = document.createElement('div');
     row.className = 'preset-row';
-
     const open = document.createElement('button');
     open.type = 'button';
     open.className = 'preset-open';
@@ -74,14 +69,23 @@ function renderPresets() {
     const size = document.createElement('span');
     size.className = 'preset-size';
     size.textContent = `${preset.width} × ${preset.height}`;
-
     open.append(name, size);
     open.addEventListener('click', async () => {
       widthInput.value = preset.width;
       heightInput.value = preset.height;
       await openWindow(preset.width, preset.height, open);
     });
-
+    const apply = document.createElement('button');
+    apply.type = 'button';
+    apply.className = 'preset-apply secondary';
+    apply.textContent = 'Apply';
+    apply.title = `Resize this Chrome window to ${preset.name} (${preset.width} × ${preset.height})`;
+    apply.setAttribute('aria-label', `Apply ${preset.name} to current window`);
+    apply.addEventListener('click', async () => {
+      widthInput.value = preset.width;
+      heightInput.value = preset.height;
+      await applyWindow(preset.width, preset.height, apply);
+    });
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'preset-delete';
@@ -94,8 +98,7 @@ function renderPresets() {
       deleteError.textContent = '';
       deleteDialog.showModal();
     });
-
-    row.append(open, remove);
+    row.append(open, apply, remove);
     presetList.append(row);
   }
 }
@@ -109,12 +112,10 @@ async function loadSettings() {
       height: DEFAULT_HEIGHT,
       presets: []
     });
-
     const width = Number(saved.width);
     const height = Number(saved.height);
     widthInput.value = validDimensions(width, height) ? width : DEFAULT_WIDTH;
     heightInput.value = validDimensions(width, height) ? height : DEFAULT_HEIGHT;
-
     const seen = new Set();
     presets = (Array.isArray(saved.presets) ? saved.presets : []).filter(preset => {
       if (!preset || typeof preset.name !== 'string' ||
@@ -137,7 +138,6 @@ async function loadSettings() {
     saveButton.disabled = false;
   }
 }
-
 async function openWindow(width, height, button) {
   if (!validDimensions(width, height)) {
     showStatus('Enter a valid whole-number width and height.');
@@ -153,7 +153,6 @@ async function openWindow(width, height, button) {
     } catch (error) {
       console.warn('Could not remember last dimensions:', error);
     }
-
     const created = await chrome.windows.create({
       type: 'normal',
       state: 'normal',
@@ -165,6 +164,41 @@ async function openWindow(width, height, button) {
     window.close();
   } catch (error) {
     showStatus(`Could not open the window: ${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
+}
+async function applyWindow(width, height, button) {
+  if (!validDimensions(width, height)) {
+    showStatus('Enter a valid whole-number width and height.');
+    return;
+  }
+
+  showStatus('');
+  button.disabled = true;
+  try {
+    const current = await chrome.windows.getCurrent({ windowTypes: ['normal'] });
+    if (!current || !Number.isInteger(current.id)) {
+      throw new Error('Chrome did not identify the current browser window.');
+    }
+
+    // Save first in case resizing causes Chrome to dismiss the popup.
+    try {
+      await chrome.storage.local.set({ width, height });
+    } catch (error) {
+      console.warn('Could not remember last dimensions:', error);
+    }
+
+    // Chrome accepts state: 'normal' together with dimensions, so a
+    // maximized/fullscreen window can be restored and resized in one call.
+    const updateInfo = current.state === 'normal'
+      ? { width, height }
+      : { state: 'normal', width, height };
+    const resized = await chrome.windows.update(current.id, updateInfo);
+    if (!resized) throw new Error('Chrome did not resize the window.');
+    window.close();
+  } catch (error) {
+    showStatus(`Could not resize the current window: ${error.message}`);
   } finally {
     button.disabled = false;
   }
@@ -189,17 +223,20 @@ captureButton.addEventListener('click', async () => {
     captureButton.disabled = false;
   }
 });
-
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const dimensions = enteredDimensions();
   if (dimensions) await openWindow(dimensions.width, dimensions.height, openButton);
 });
 
+applyButton.addEventListener('click', async () => {
+  const dimensions = enteredDimensions();
+  if (dimensions) await applyWindow(dimensions.width, dimensions.height, applyButton);
+});
+
 saveButton.addEventListener('click', () => {
   const dimensions = enteredDimensions();
   if (!dimensions) return;
-
   saveDescription.textContent = `${dimensions.width} × ${dimensions.height} pixels`;
   presetNameInput.value = '';
   saveError.textContent = '';
@@ -214,7 +251,6 @@ presetNameInput.addEventListener('input', () => {
   confirmSave.textContent = 'Save';
   saveError.textContent = '';
 });
-
 saveForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   const name = presetNameInput.value.trim();
@@ -223,7 +259,6 @@ saveForm.addEventListener('submit', async (event) => {
     saveError.textContent = 'Enter a name (up to 48 characters) and valid dimensions.';
     return;
   }
-
   const existing = findPreset(name);
   if (existing && pendingOverwrite !== existing.name) {
     pendingOverwrite = existing.name;
@@ -235,7 +270,6 @@ saveForm.addEventListener('submit', async (event) => {
   const updated = existing
     ? presets.map(preset => preset === existing ? { name: existing.name, ...dimensions } : preset)
     : [...presets, { name, ...dimensions }];
-
   confirmSave.disabled = true;
   try {
     await chrome.storage.local.set({ presets: updated });
@@ -249,13 +283,11 @@ saveForm.addEventListener('submit', async (event) => {
     confirmSave.disabled = false;
   }
 });
-
 document.getElementById('cancel-save').addEventListener('click', () => saveDialog.close());
 document.getElementById('cancel-delete').addEventListener('click', () => deleteDialog.close());
 
 deleteDialog.addEventListener('close', () => { pendingDelete = null; });
 saveDialog.addEventListener('close', () => { pendingOverwrite = null; });
-
 confirmDelete.addEventListener('click', async () => {
   if (!pendingDelete) return;
   const name = pendingDelete;
@@ -273,5 +305,4 @@ confirmDelete.addEventListener('click', async () => {
     confirmDelete.disabled = false;
   }
 });
-
 loadSettings();

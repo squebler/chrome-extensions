@@ -5,21 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Window Sizer</title>
   <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="apply.css">
   <script src="popup.js" defer></script>
 </head>
 <body>
   <main>
     <header>
-      <h1>New window</h1>
+      <h1>Window Sizer</h1>
       <p>Choose the outer window size in pixels.</p>
     </header>
-
     <section class="presets-section" aria-labelledby="presets-heading">
       <h2 id="presets-heading">Saved sizes</h2>
       <div id="preset-list" class="preset-list"></div>
       <p id="empty-presets" class="empty-presets">No presets yet. Save a size below.</p>
     </section>
-
     <form id="window-form">
       <div class="dimensions">
         <label for="width">Width
@@ -33,14 +32,15 @@
       <button type="button" id="use-current-window" class="secondary capture-button">Use current window</button>
       <div class="actions">
         <button type="submit" id="open-window" class="primary">Open window</button>
+        <button type="button" id="apply-window" class="secondary">Apply to current</button>
+      </div>
+      <div class="actions save-actions">
         <button type="button" id="save-preset" class="secondary">Save…</button>
       </div>
       <p id="status" role="status" aria-live="polite"></p>
     </form>
-
     <footer>Sizes include Chrome's frame and tabs. Chrome may adjust them to fit your display.</footer>
   </main>
-
   <dialog id="save-dialog" aria-labelledby="save-heading">
     <form id="save-form">
       <h2 id="save-heading">Save window size</h2>
@@ -54,7 +54,6 @@
       </div>
     </form>
   </dialog>
-
   <dialog id="delete-dialog" aria-labelledby="delete-heading">
     <h2 id="delete-heading">Delete saved size?</h2>
     <p id="delete-description" class="dialog-description"></p>
